@@ -21,6 +21,7 @@ SHM_IN_PATH = "/tmp/rtx_vsr_in"
 SHM_OUT_PATH = "/tmp/rtx_vsr_out"
 TARGET_W = 3840
 TARGET_H = 2160
+MAX_SCALE = 2.0  # cap for real-time performance (reduce if dropping frames)
 
 core = vs.core
 
@@ -169,16 +170,16 @@ scale_w = TARGET_W / clip.width
 scale_h = TARGET_H / clip.height
 scale = min(scale_w, scale_h, 4.0)  # cap at 4x (RTX max)
 
-# For high fps content, reduce scale to stay real-time
-# RTX VSR sustains ~24fps at 2x 1080p on a 5070 Ti
-fps_num = clip.fps.numerator
-fps_den = clip.fps.denominator
-source_fps = fps_num / fps_den if fps_den else 30
-if source_fps > 25 and scale > 1.5:
-    scale = min(scale, 1.5)  # 1080p -> 1620p instead of 4K
+# Cap scale for real-time performance
+import sys
 
-# Skip if source already meets or exceeds target (scale <= 1)
+scale = min(scale, MAX_SCALE)
+
 if scale <= 1.0:
+    print(
+        f"RTX VSR: {clip.width}x{clip.height} — skipping, already at target",
+        file=sys.stderr,
+    )
     clip.set_output()
 else:
     clip_rgb = core.resize.Bilinear(clip, format=vs.RGB24, matrix_in_s="709")
@@ -187,6 +188,10 @@ else:
     out_h = max(8, int(clip.height * scale) // 8 * 8)
     _target_out_w = out_w
     _target_out_h = out_h
+    print(
+        f"RTX VSR: {clip.width}x{clip.height} -> {out_w}x{out_h} ({scale:.1f}x)",
+        file=sys.stderr,
+    )
 
     blank = core.std.BlankClip(clip_rgb, width=out_w, height=out_h, format=vs.RGB24)
     clip_out = core.std.ModifyFrame(blank, [clip_rgb, blank], make_frame)
