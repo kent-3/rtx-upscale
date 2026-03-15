@@ -161,7 +161,7 @@ def create_rtx_upscaler(output_width: int, output_height: int, quality: str = "U
         "DEBLUR_HIGH": ql.DEBLUR_HIGH,
         "DEBLUR_ULTRA": ql.DEBLUR_ULTRA,
     }
-    q = quality_map.get(quality.upper(), ql.HIGHBITRATE_ULTRA)
+    q = quality_map.get(quality.upper(), ql.ULTRA)
     sr = nvvfx.VideoSuperRes(q)
     sr.output_width = output_width
     sr.output_height = output_height
@@ -528,8 +528,8 @@ Examples:
     rtx.add_argument(
         "--rtx-quality",
         type=str,
-        default="HIGHBITRATE_ULTRA",
-        help="RTX VSR quality level (default: HIGHBITRATE_ULTRA). "
+        default="ULTRA",
+        help="RTX VSR quality level (default: ULTRA). "
         "Standard: LOW/MEDIUM/HIGH/ULTRA (artifact suppression + upscale). "
         "High-bitrate: HIGHBITRATE_LOW/.../HIGHBITRATE_ULTRA (clean sources, skips artifact suppression). "
         "Same-res: DENOISE_*/DEBLUR_* (set --no-upscale or --scale 1)",

@@ -24,14 +24,14 @@ SHM_IN_PATH = "/tmp/rtx_vsr_in"
 SHM_OUT_PATH = "/tmp/rtx_vsr_out"
 
 
-def create_upscaler(out_w, out_h, quality="HIGHBITRATE_ULTRA"):
+def create_upscaler(out_w, out_h, quality="ULTRA"):
     ql = nvvfx.effects.QualityLevel
     quality_map = {
         name: getattr(ql, name)
         for name in dir(ql)
         if not name.startswith("_") and isinstance(getattr(ql, name), int)
     }
-    q = quality_map.get(quality.upper(), ql.HIGHBITRATE_ULTRA)
+    q = quality_map.get(quality.upper(), ql.ULTRA)
     sr = nvvfx.VideoSuperRes(q)
     sr.output_width = out_w
     sr.output_height = out_h
@@ -74,7 +74,7 @@ def main():
     parser.add_argument(
         "--quality",
         type=str,
-        default="HIGHBITRATE_ULTRA",
+        default="ULTRA",
     )
     parser.add_argument("--socket", type=str, default="/tmp/rtx_vsr.sock")
     args = parser.parse_args()
