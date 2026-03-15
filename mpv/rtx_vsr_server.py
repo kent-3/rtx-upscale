@@ -71,7 +71,6 @@ def create_mmap_file(path, size):
 CONFIG_PATH = os.path.expanduser("~/.config/rtx-vsr.conf")
 
 DEFAULT_CONFIG = {
-    "scale": 2.0,
     "quality": "ULTRA",
 }
 
@@ -88,9 +87,7 @@ def load_config():
                 if "=" in line:
                     key, val = line.split("=", 1)
                     key, val = key.strip(), val.strip()
-                    if key == "scale":
-                        config["scale"] = float(val)
-                    elif key == "quality":
+                    if key == "quality":
                         config["quality"] = val
     return config
 
@@ -102,8 +99,6 @@ def save_default_config():
         with open(CONFIG_PATH, "w") as f:
             f.write("# RTX VSR Server config\n")
             f.write("# Edit and restart: systemctl --user restart rtx-vsr\n\n")
-            f.write("# Upscale factor\n")
-            f.write("scale=2.0\n\n")
             f.write("# Quality: ULTRA, HIGH, MEDIUM, LOW\n")
             f.write(
                 "#          HIGHBITRATE_ULTRA/HIGH/MEDIUM/LOW (for clean sources)\n"
@@ -116,7 +111,6 @@ def save_default_config():
 
 def main():
     parser = argparse.ArgumentParser(description="RTX VSR Server (mmap)")
-    parser.add_argument("--scale", type=float, default=None)
     parser.add_argument("--quality", type=str, default=None)
     parser.add_argument("--socket", type=str, default="/tmp/rtx_vsr.sock")
     args = parser.parse_args()
@@ -125,12 +119,9 @@ def main():
     config = load_config()
 
     # CLI args override config file
-    if args.scale is not None:
-        config["scale"] = args.scale
     if args.quality is not None:
         config["quality"] = args.quality
 
-    args.scale = config["scale"]
     args.quality = config["quality"]
 
     sock_path = args.socket
@@ -157,7 +148,7 @@ def main():
     signal.signal(signal.SIGTERM, cleanup)
 
     print(f"RTX VSR Server listening on {sock_path}")
-    print(f"  Scale: {args.scale}x | Quality: {args.quality}")
+    print(f"  Quality: {args.quality}")
     print(f"  Waiting for connection...")
 
     try:
@@ -178,9 +169,13 @@ def main():
                     if cmd == 2:  # shutdown
                         break
 
-                    if cmd == 0:  # init
-                        new_out_w = max(8, int(w * args.scale) // 8 * 8)
-                        new_out_h = max(8, int(h * args.scale) // 8 * 8)
+                    if (
+                        cmd == 0
+                    ):  # init — client sends 20 bytes: in_w, in_h, out_w, out_h, 0
+                        extra = conn.recv(8)
+                        if not extra or len(extra) < 8:
+                            break
+                        new_out_w, new_out_h = struct.unpack("<II", extra)
 
                         in_size = w * h * 3
                         out_size = new_out_w * new_out_h * 3

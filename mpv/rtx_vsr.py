@@ -41,12 +41,13 @@ def ensure_connection():
     return _conn
 
 
-def init_shm(width, height):
+def init_shm(width, height, target_w, target_h):
     """Send init command, wait for server to create mmap files, then open them."""
     global _mm_in, _mm_out, _out_w, _out_h, _initialized
 
     conn = ensure_connection()
-    conn.sendall(struct.pack("<III", width, height, 0))
+    # Send input dims + desired output dims
+    conn.sendall(struct.pack("<IIIII", width, height, target_w, target_h, 0))
 
     resp = conn.recv(8)
     _out_w, _out_h = struct.unpack("<II", resp)
@@ -64,6 +65,10 @@ def init_shm(width, height):
     os.close(fd_out)
 
     _initialized = True
+
+
+_target_out_w = 0
+_target_out_h = 0
 
 
 def _reconnect(width, height):
@@ -88,7 +93,7 @@ def _reconnect(width, height):
     _mm_in = None
     _mm_out = None
     _initialized = False
-    init_shm(width, height)
+    init_shm(width, height, _target_out_w, _target_out_h)
 
 
 def make_frame(n, f):
@@ -100,7 +105,7 @@ def make_frame(n, f):
 
     with _lock:
         if not _initialized:
-            init_shm(width, height)
+            init_shm(width, height, _target_out_w, _target_out_h)
 
         try:
             # Write planar RGB into mmap
@@ -171,6 +176,8 @@ else:
 
     out_w = max(8, int(clip.width * scale) // 8 * 8)
     out_h = max(8, int(clip.height * scale) // 8 * 8)
+    _target_out_w = out_w
+    _target_out_h = out_h
 
     blank = core.std.BlankClip(clip_rgb, width=out_w, height=out_h, format=vs.RGB24)
     clip_out = core.std.ModifyFrame(blank, [clip_rgb, blank], make_frame)
