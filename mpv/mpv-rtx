@@ -1,0 +1,18 @@
+#!/bin/bash
+# Launch native mpv with RTX VSR direct filter
+# No server needed — nvvfx runs in-process
+
+export LD_LIBRARY_PATH=/home/kent/ai/mpv-native/lib:$LD_LIBRARY_PATH
+export PYTHONPATH=/home/kent/ai/ComfyUI/.venv/lib/python3.12/site-packages
+
+exec /home/kent/ai/mpv-native/bin/mpv \
+    --hwdec=nvdec-copy \
+    --vo=gpu-next \
+    --gpu-context=wayland \
+    --video-sync=display-resample \
+    --interpolation=yes \
+    --tscale=oversample \
+    --deband=yes \
+    --glsl-shader=/home/kent/.var/app/io.mpv.Mpv/config/mpv/shaders/FSR.glsl \
+    --vf="vapoursynth=file=/home/kent/ai/rtx-upscale-cli/mpv/rtx_vsr_direct.py" \
+    "$@"

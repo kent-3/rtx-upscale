@@ -21,7 +21,7 @@ SHM_IN_PATH = "/tmp/rtx_vsr_in"
 SHM_OUT_PATH = "/tmp/rtx_vsr_out"
 TARGET_W = 3840
 TARGET_H = 2160
-MAX_SCALE = 2.0  # cap for real-time performance (reduce if dropping frames)
+MAX_SCALE = 1.5  # cap for real-time performance (reduce if dropping frames)
 
 core = vs.core
 
