@@ -19,7 +19,8 @@ import vapoursynth as vs
 SOCKET_PATH = "/tmp/rtx_vsr.sock"
 SHM_IN_PATH = "/tmp/rtx_vsr_in"
 SHM_OUT_PATH = "/tmp/rtx_vsr_out"
-SCALE = 2
+TARGET_W = 3840
+TARGET_H = 2160
 
 core = vs.core
 
@@ -157,13 +158,24 @@ def make_frame(n, f):
 
 clip = video_in  # noqa: F821
 
-clip_rgb = core.resize.Bilinear(clip, format=vs.RGB24, matrix_in_s="709")
+# Skip upscaling if source is already at or above target resolution
+if clip.width >= TARGET_W and clip.height >= TARGET_H:
+    clip.set_output()
+else:
+    clip_rgb = core.resize.Bilinear(clip, format=vs.RGB24, matrix_in_s="709")
 
-out_w = max(8, (clip.width * SCALE) // 8 * 8)
-out_h = max(8, (clip.height * SCALE) // 8 * 8)
+    # Calculate output dimensions to reach target, capped at target
+    scale_w = TARGET_W / clip.width
+    scale_h = TARGET_H / clip.height
+    scale = min(scale_w, scale_h)
+    # RTX supports up to 4x, clamp
+    scale = min(scale, 4.0)
 
-blank = core.std.BlankClip(clip_rgb, width=out_w, height=out_h, format=vs.RGB24)
-clip_out = core.std.ModifyFrame(blank, [clip_rgb, blank], make_frame)
-clip_out = core.resize.Bilinear(clip_out, format=vs.YUV420P8, matrix_s="709")
+    out_w = max(8, int(clip.width * scale) // 8 * 8)
+    out_h = max(8, int(clip.height * scale) // 8 * 8)
 
-clip_out.set_output()
+    blank = core.std.BlankClip(clip_rgb, width=out_w, height=out_h, format=vs.RGB24)
+    clip_out = core.std.ModifyFrame(blank, [clip_rgb, blank], make_frame)
+    clip_out = core.resize.Bilinear(clip_out, format=vs.YUV420P8, matrix_s="709")
+
+    clip_out.set_output()
