@@ -158,18 +158,16 @@ def make_frame(n, f):
 
 clip = video_in  # noqa: F821
 
-# Skip upscaling if source is already at or above target resolution
-if clip.width >= TARGET_W and clip.height >= TARGET_H:
+# Calculate scale needed to fit source within target box (preserves aspect ratio)
+scale_w = TARGET_W / clip.width
+scale_h = TARGET_H / clip.height
+scale = min(scale_w, scale_h, 4.0)  # cap at 4x (RTX max)
+
+# Skip if source already meets or exceeds target (scale <= 1)
+if scale <= 1.0:
     clip.set_output()
 else:
     clip_rgb = core.resize.Bilinear(clip, format=vs.RGB24, matrix_in_s="709")
-
-    # Calculate output dimensions to reach target, capped at target
-    scale_w = TARGET_W / clip.width
-    scale_h = TARGET_H / clip.height
-    scale = min(scale_w, scale_h)
-    # RTX supports up to 4x, clamp
-    scale = min(scale, 4.0)
 
     out_w = max(8, int(clip.width * scale) // 8 * 8)
     out_h = max(8, int(clip.height * scale) // 8 * 8)
