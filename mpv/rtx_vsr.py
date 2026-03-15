@@ -169,6 +169,14 @@ scale_w = TARGET_W / clip.width
 scale_h = TARGET_H / clip.height
 scale = min(scale_w, scale_h, 4.0)  # cap at 4x (RTX max)
 
+# For high fps content, reduce scale to stay real-time
+# RTX VSR sustains ~24fps at 2x 1080p on a 5070 Ti
+fps_num = clip.fps.numerator
+fps_den = clip.fps.denominator
+source_fps = fps_num / fps_den if fps_den else 30
+if source_fps > 25 and scale > 1.5:
+    scale = min(scale, 1.5)  # 1080p -> 1620p instead of 4K
+
 # Skip if source already meets or exceeds target (scale <= 1)
 if scale <= 1.0:
     clip.set_output()
