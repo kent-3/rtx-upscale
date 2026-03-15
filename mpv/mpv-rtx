@@ -9,9 +9,7 @@ exec /home/kent/ai/mpv-native/bin/mpv \
     --hwdec=nvdec-copy \
     --vo=gpu-next \
     --gpu-context=wayland \
-    --video-sync=display-resample \
-    --interpolation=yes \
-    --tscale=oversample \
+    --video-sync=audio \
     --deband=yes \
     --glsl-shader=/home/kent/.var/app/io.mpv.Mpv/config/mpv/shaders/FSR.glsl \
     --vf="vapoursynth=file=/home/kent/ai/rtx-upscale-cli/mpv/rtx_vsr_direct.py" \
