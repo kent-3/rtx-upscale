@@ -2,20 +2,20 @@
 
 ## Project Overview
 
-Video upscaling and enhancement CLI using Nvidia RTX Video Super Resolution (`nvidia-vfx` SDK) and DeH264 artifact removal models. Two main components:
+Video upscaling and enhancement using Nvidia RTX Video Super Resolution (`nvidia-vfx` SDK) and DeH264 artifact removal models. Two independent tools:
 
-- **`rtx_enhance.py`** — Batch video processing pipeline (ffmpeg decode → optional DeH264 → RTX upscale → ffmpeg encode)
+- **`cli/`** — Batch video processing pipeline (ffmpeg decode → optional DeH264 → RTX upscale → ffmpeg encode)
 - **`mpv/`** — Real-time upscaling during mpv playback via VapourSynth filters
 
-Pure Python project (no package manager, no build system). Dependencies installed via pip into a venv.
+Pure Python project (no package manager, no build system). Each tool has its own `requirements.txt`.
 
 ## Prerequisites
 
 - **Nvidia RTX GPU** (20-series+)
-- **Python 3.10+** with venv
-- **ffmpeg** in PATH
+- **Python 3.10+**
 - **CUDA** toolkit + `nvidia-vfx` SDK
-- **mpv** with [VapourSynth](https://www.vapoursynth.com/doc/installation.html) support (for real-time playback).
+- **ffmpeg** in PATH (batch CLI only)
+- **[VapourSynth](https://www.vapoursynth.com/doc/installation.html)** + **mpv** with VapourSynth support (mpv filter only).
   mpv must be built with `--enable-vapoursynth` (or `--enable-vapoursynth-lazy`).
   See [mpv's VapourSynth filter docs](https://mpv.io/manual/master/#video-filters-vapoursynth).
 
@@ -24,23 +24,28 @@ Pure Python project (no package manager, no build system). Dependencies installe
 ### Install dependencies
 
 ```bash
-pip install nvidia-vfx torch numpy spandrel
+# Batch CLI
+pip install -r cli/requirements.txt
+
+# mpv filter
+pip install -r mpv/requirements.txt
+pip install vapoursynth
 ```
 
-### Run the CLI
+### Run the batch CLI
 
 ```bash
 # Basic 2x upscale
-python rtx_enhance.py input.mp4 output.mkv
+python cli/rtx_enhance.py input.mp4 output.mkv
 
 # With DeH264 decompression
-python rtx_enhance.py input.mp4 output.mkv --decompress
+python cli/rtx_enhance.py input.mp4 output.mkv --decompress
 
 # Decompress only (no upscaling)
-python rtx_enhance.py input.mp4 output.mkv --decompress --no-upscale
+python cli/rtx_enhance.py input.mp4 output.mkv --decompress --no-upscale
 ```
 
-### Run the mpv real-time server
+### Run the mpv real-time filter
 
 ```bash
 # Start server
@@ -67,17 +72,22 @@ No test suite exists. The project is a CLI tool — test manually by running on 
 ## Architecture
 
 ```
-rtx_enhance.py          Main CLI — threaded pipeline (decoder → GPU → encoder)
-rtmosr.py               RTMoSR neural network architecture (MIT, from rewaifu/RTMoSR)
-models/                 Pre-trained DeH264 model weights (.pth, .safetensors)
+cli/
+  rtx_enhance.py        Main CLI — threaded pipeline (decoder → GPU → encoder)
+  rtmosr.py             RTMoSR neural network architecture (MIT, from rewaifu/RTMoSR)
+  models/               Pre-trained DeH264 model weights (.pth, .safetensors)
+  requirements.txt      torch, numpy, nvidia-vfx, spandrel
 mpv/
   rtx_vsr_server.py     Standalone RTX VSR server (mmap + Unix socket IPC)
   rtx_vsr.py            VapourSynth filter client (connects to server via mmap)
   rtx_vsr_direct.py     VapourSynth filter with in-process nvvfx (no server)
   mpv-rtx               Shell wrapper to launch native mpv with direct filter
+  requirements.txt      torch, numpy, nvidia-vfx
 ```
 
-### Pipeline threading model (`rtx_enhance.py`)
+The two tools share no code. `cli/` does not import from `mpv/` and vice versa.
+
+### Pipeline threading model (`cli/rtx_enhance.py`)
 
 Three threads connected by queues (depth 32):
 1. **Decoder thread** — reads raw frames from ffmpeg, uploads to GPU via pinned memory
@@ -100,7 +110,7 @@ Target Python 3.10+. Use modern syntax: `list[str]` not `List[str]`, `X | None` 
 
 ### Imports
 
-Standard library first, then third-party, then local. Sorted alphabetically within groups. Example from `rtx_enhance.py`:
+Standard library first, then third-party, then local. Sorted alphabetically within groups. Example from `cli/rtx_enhance.py`:
 
 ```python
 import argparse
@@ -194,5 +204,5 @@ Module-level docstrings describe purpose, usage, and requirements.
 
 ## Files You Should Not Modify
 
-- `rtmosr.py` — vendored third-party architecture (MIT license, from rewaifu/RTMoSR)
-- `models/*.pth`, `models/*.safetensors` — pre-trained weights (binary files)
+- `cli/rtmosr.py` — vendored third-party architecture (MIT license, from rewaifu/RTMoSR)
+- `cli/models/*.pth`, `cli/models/*.safetensors` — pre-trained weights (binary files)

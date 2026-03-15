@@ -2,10 +2,10 @@
 VapourSynth filter for mpv — RTX VSR via file-backed mmap (zero-copy, flatpak-safe).
 
 Terminal 1:
-    /home/kent/ai/ComfyUI/.venv/bin/python /home/kent/ai/rtx-upscale-cli/mpv/rtx_vsr_server.py
+    python mpv/rtx_vsr_server.py
 
 Terminal 2:
-    mpv video.mp4 --hwdec=no --vf="vapoursynth=file=/home/kent/ai/rtx-upscale-cli/mpv/rtx_vsr.py:concurrent-frames=1"
+    mpv video.mp4 --hwdec=no --vf="vapoursynth=file=$(pwd)/mpv/rtx_vsr.py:concurrent-frames=1"
 """
 
 import ctypes

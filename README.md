@@ -2,45 +2,40 @@
 
 Video upscaling and enhancement using Nvidia's [`nvidia-vfx`](https://pypi.org/project/nvidia-vfx/) SDK (RTX Video Super Resolution). The SDK supports AI upscaling (2x/3x/4x), denoising, and deblurring on RTX GPUs.
 
-- **`rtx_enhance.py`** — Batch video processing (ffmpeg decode → optional DeH264 artifact removal → RTX upscale → ffmpeg encode)
+Two independent tools — install only what you need:
+
+- **`cli/`** — Batch video processing (ffmpeg decode → optional DeH264 artifact removal → RTX upscale → ffmpeg encode)
 - **`mpv/`** — Real-time upscaling during mpv playback via VapourSynth + shared memory
 
-## Requirements
-
-- **Nvidia RTX GPU** (RTX 20-series or newer)
-- **Python 3.10+** with a virtual environment
-- **ffmpeg** in PATH
-- **mpv** with VapourSynth support (for real-time playback)
-
-### Python dependencies
-
-```bash
-pip install nvidia-vfx torch numpy spandrel
-```
-
-`spandrel` is only needed if you use the `ultrafast` or `best` DeH264 presets. The default `fast` preset uses the bundled RTMoSR architecture.
-
-For the real-time mpv playback features, also install [VapourSynth](https://www.vapoursynth.com/doc/installation.html):
-
-```bash
-pip install vapoursynth
-```
-
-## Batch CLI — `rtx_enhance.py`
+## Batch CLI — `cli/`
 
 Upscale video files with a threaded pipeline: ffmpeg decode &rarr; GPU processing &rarr; ffmpeg encode.
+
+### Requirements
+
+- Nvidia RTX GPU (20-series or newer)
+- Python 3.10+
+- ffmpeg in PATH
+
+### Install
+
+```bash
+pip install -r cli/requirements.txt
+```
+
+(`spandrel` is only needed for the `ultrafast` or `best` DeH264 presets. The default `fast` preset uses the bundled RTMoSR architecture.)
 
 ### Basic usage
 
 ```bash
-# 2x upscale with RTX VSR (default: AV1 NVENC output, CQ 25)
-python rtx_enhance.py input.mp4 output.mkv
+# 2x upscale with RTX VSR
+python cli/rtx_enhance.py input.mp4 output.mkv
 
 # With DeH264 artifact removal before upscaling
-python rtx_enhance.py input.mp4 output.mkv --decompress
+python cli/rtx_enhance.py input.mp4 output.mkv --decompress
 
 # Decompress only (no upscaling) — clean up a low-bitrate source
-python rtx_enhance.py input.mp4 output.mkv --decompress --no-upscale
+python cli/rtx_enhance.py input.mp4 output.mkv --decompress --no-upscale
 ```
 
 ### Options
@@ -67,7 +62,7 @@ RTX upscaling:
                             RTX VSR quality (default: ULTRA)
 
 Output encoding:
-  --codec CODEC             av1_nvenc, av1, hevc_nvenc, h264, h265, prores, etc. (default: av1_nvenc)
+  --codec CODEC             av1, av1_nvenc, hevc_nvenc, nvenc, h264, h265, prores, etc. (default: av1)
   --crf N                   CRF/CQ quality (default: 25)
   --preset N                Encoder preset (default: 4)
   --no-audio                Don't copy audio from input
@@ -78,24 +73,52 @@ Output encoding:
 
 ```bash
 # Maximum quality: best decompression + 4x upscale, HEVC output
-python rtx_enhance.py input.mp4 output.mkv --decompress --deh264-preset best --scale 4 --codec hevc
+python cli/rtx_enhance.py input.mp4 output.mkv --decompress --deh264-preset best --scale 4 --codec hevc
 
 # Fastest possible processing
-python rtx_enhance.py input.mp4 output.mkv --deh264-preset ultrafast --rtx-quality LOW
+python cli/rtx_enhance.py input.mp4 output.mkv --deh264-preset ultrafast --rtx-quality LOW
 
 # Target exact resolution
-python rtx_enhance.py input.mp4 output_4k.mkv --target-width 3840 --target-height 2160
+python cli/rtx_enhance.py input.mp4 output_4k.mkv --target-width 3840 --target-height 2160
 
 # SVT-AV1 software encoding (better compression, slower)
-python rtx_enhance.py input.mp4 output.mkv --codec av1 --crf 25 --preset 4
+python cli/rtx_enhance.py input.mp4 output.mkv --codec av1 --crf 25 --preset 4
 
 # ProRes for editing
-python rtx_enhance.py input.mp4 output.mov --codec prores
+python cli/rtx_enhance.py input.mp4 output.mov --codec prores
 ```
+
+### DeH264 models
+
+Three artifact removal models are included for cleaning up compression artifacts before upscaling:
+
+| Preset | Model | Size | Params | Speed | Best for |
+|--------|-------|------|--------|-------|----------|
+| `ultrafast` | SuperUltraCompact | 172K | 43K | Fastest | Light cleanup on decent sources |
+| `fast` | RTMoSR | 11M | 2.8M | Fast | Good all-rounder (default) |
+| `best` | RealPLKSR | 29M | 7.4M | Slowest | Heavy artifact removal on low-bitrate footage |
+
+Models from [Phhofm/models](https://github.com/Phhofm/models) and [TNTwise/real-video-enhancer-models](https://github.com/TNTwise/real-video-enhancer-models).
+
+RTMoSR architecture from [rewaifu/RTMoSR](https://github.com/rewaifu/RTMoSR) (MIT license).
 
 ## Real-time mpv playback — `mpv/`
 
 Watch any video with RTX Super Resolution applied in real-time. Uses a server/client architecture with file-backed mmap for zero-copy frame transfer.
+
+### Requirements
+
+- Nvidia RTX GPU (20-series or newer)
+- Python 3.10+
+- [VapourSynth](https://www.vapoursynth.com/doc/installation.html) (`pip install vapoursynth`)
+- [mpv](https://mpv.io/) with VapourSynth support (built with `--enable-vapoursynth`)
+
+### Install
+
+```bash
+pip install -r mpv/requirements.txt
+pip install vapoursynth
+```
 
 ### Setup
 
@@ -111,11 +134,17 @@ python mpv/rtx_vsr_server.py
 mpv video.mp4 --hwdec=auto-copy --vf="vapoursynth=file=$(pwd)/mpv/rtx_vsr.py:concurrent-frames=1"
 ```
 
+Or use the direct in-process filter (no server needed):
+
+```bash
+bash mpv/mpv-rtx video.mp4
+```
+
 ### Server options
 
 ```bash
-python mpv/rtx_vsr_server.py --scale 2 --quality ULTRA    # defaults
-python mpv/rtx_vsr_server.py --scale 1.5 --quality MEDIUM  # faster, less upscale
+python mpv/rtx_vsr_server.py --quality ULTRA    # default
+python mpv/rtx_vsr_server.py --quality MEDIUM    # faster
 ```
 
 ### How it works
@@ -140,20 +169,6 @@ Frame data is shared via memory-mapped files in `/tmp` (zero-copy). Only tiny 12
 - The server must be running before you start mpv
 - Seeking works but may briefly stutter as the connection recovers
 - For 24fps content on a 60Hz display, you need the server to sustain ~24fps — check its output for speed
-
-## DeH264 models
-
-Three artifact removal models are included for cleaning up compression artifacts before upscaling:
-
-| Preset | Model | Size | Params | Speed | Best for |
-|--------|-------|------|--------|-------|----------|
-| `ultrafast` | SuperUltraCompact | 172K | 43K | Fastest | Light cleanup on decent sources |
-| `fast` | RTMoSR | 11M | 2.8M | Fast | Good all-rounder (default) |
-| `best` | RealPLKSR | 29M | 7.4M | Slowest | Heavy artifact removal on low-bitrate footage |
-
-Models from [Phhofm/models](https://github.com/Phhofm/models) and [TNTwise/real-video-enhancer-models](https://github.com/TNTwise/real-video-enhancer-models).
-
-RTMoSR architecture from [rewaifu/RTMoSR](https://github.com/rewaifu/RTMoSR) (MIT license).
 
 ## License
 
