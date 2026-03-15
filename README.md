@@ -190,11 +190,13 @@ python mpv/rtx_vsr_server.py
 mpv video.mp4 --hwdec=auto-copy --vf="vapoursynth=file=$(pwd)/mpv/rtx_vsr.py:concurrent-frames=1"
 ```
 
-Or use the direct in-process filter (no server needed):
+Or use the direct in-process filter (no server needed, faster):
 
 ```bash
 bash mpv/mpv-rtx video.mp4
 ```
+
+The direct filter runs nvvfx in-process and avoids the mmap/socket overhead, so it comfortably handles 24fps+ content. The server approach struggles to maintain 24fps due to IPC latency. **Use the direct filter if your mpv is native (not flatpak).**
 
 ### Server options
 
