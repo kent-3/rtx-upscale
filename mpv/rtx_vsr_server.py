@@ -68,16 +68,70 @@ def create_mmap_file(path, size):
     return mm
 
 
+CONFIG_PATH = os.path.expanduser("~/.config/rtx-vsr.conf")
+
+DEFAULT_CONFIG = {
+    "scale": 2.0,
+    "quality": "ULTRA",
+}
+
+
+def load_config():
+    """Load config from file, falling back to defaults."""
+    config = DEFAULT_CONFIG.copy()
+    if os.path.isfile(CONFIG_PATH):
+        with open(CONFIG_PATH) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
+                    key, val = line.split("=", 1)
+                    key, val = key.strip(), val.strip()
+                    if key == "scale":
+                        config["scale"] = float(val)
+                    elif key == "quality":
+                        config["quality"] = val
+    return config
+
+
+def save_default_config():
+    """Write default config if it doesn't exist."""
+    if not os.path.isfile(CONFIG_PATH):
+        os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+        with open(CONFIG_PATH, "w") as f:
+            f.write("# RTX VSR Server config\n")
+            f.write("# Edit and restart: systemctl --user restart rtx-vsr\n\n")
+            f.write("# Upscale factor\n")
+            f.write("scale=2.0\n\n")
+            f.write("# Quality: ULTRA, HIGH, MEDIUM, LOW\n")
+            f.write(
+                "#          HIGHBITRATE_ULTRA/HIGH/MEDIUM/LOW (for clean sources)\n"
+            )
+            f.write("#          DENOISE_ULTRA/HIGH/MEDIUM/LOW (same-res denoising)\n")
+            f.write("#          DEBLUR_ULTRA/HIGH/MEDIUM/LOW (same-res deblurring)\n")
+            f.write("quality=ULTRA\n")
+        print(f"  Config written to {CONFIG_PATH}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="RTX VSR Server (mmap)")
-    parser.add_argument("--scale", type=float, default=2.0)
-    parser.add_argument(
-        "--quality",
-        type=str,
-        default="ULTRA",
-    )
+    parser.add_argument("--scale", type=float, default=None)
+    parser.add_argument("--quality", type=str, default=None)
     parser.add_argument("--socket", type=str, default="/tmp/rtx_vsr.sock")
     args = parser.parse_args()
+
+    save_default_config()
+    config = load_config()
+
+    # CLI args override config file
+    if args.scale is not None:
+        config["scale"] = args.scale
+    if args.quality is not None:
+        config["quality"] = args.quality
+
+    args.scale = config["scale"]
+    args.quality = config["quality"]
 
     sock_path = args.socket
     if os.path.exists(sock_path):
