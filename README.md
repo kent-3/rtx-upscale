@@ -20,6 +20,12 @@ pip install nvidia-vfx torch numpy spandrel
 
 `spandrel` is only needed if you use the `ultrafast` or `best` DeH264 presets. The default `fast` preset uses the bundled RTMoSR architecture.
 
+For the real-time mpv playback features, also install [VapourSynth](https://www.vapoursynth.com/doc/installation.html):
+
+```bash
+pip install vapoursynth
+```
+
 ## Batch CLI — `rtx_enhance.py`
 
 Upscale video files with a threaded pipeline: ffmpeg decode &rarr; GPU processing &rarr; ffmpeg encode.

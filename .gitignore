@@ -6,6 +6,7 @@ models/*.bin
 __pycache__/
 *.pyc
 *.pyo
+.venv/
 
 # Runtime
 /tmp/rtx_vsr.*
