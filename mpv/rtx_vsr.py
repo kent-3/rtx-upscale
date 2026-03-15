@@ -46,8 +46,9 @@ def init_shm(width, height, target_w, target_h):
     global _mm_in, _mm_out, _out_w, _out_h, _initialized
 
     conn = ensure_connection()
-    # Send input dims + desired output dims
-    conn.sendall(struct.pack("<IIIII", width, height, target_w, target_h, 0))
+    # Send init command (cmd=0), then output dims
+    conn.sendall(struct.pack("<III", width, height, 0))
+    conn.sendall(struct.pack("<II", target_w, target_h))
 
     resp = conn.recv(8)
     _out_w, _out_h = struct.unpack("<II", resp)
