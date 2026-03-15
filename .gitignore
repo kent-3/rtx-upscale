@@ -1,6 +1,4 @@
-# Model weights (large binary files)
-models/*.pth
-models/*.safetensors
+# Model weights (only ignore very large or non-distributed ones)
 models/*.onnx
 models/*.bin
 
