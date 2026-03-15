@@ -242,8 +242,6 @@ def open_video_reader(input_path: str, width: int, height: int) -> subprocess.Po
         "-hide_banner",
         "-loglevel",
         "error",
-        "-hwaccel",
-        "auto",
         "-i",
         input_path,
         "-f",
