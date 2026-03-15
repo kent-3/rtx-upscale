@@ -142,13 +142,26 @@ def create_rtx_upscaler(output_width: int, output_height: int, quality: str = "U
     """Create and configure the nvvfx VideoSuperRes context."""
     import nvvfx
 
+    ql = nvvfx.effects.QualityLevel
     quality_map = {
-        "LOW": nvvfx.effects.QualityLevel.LOW,
-        "MEDIUM": nvvfx.effects.QualityLevel.MEDIUM,
-        "HIGH": nvvfx.effects.QualityLevel.HIGH,
-        "ULTRA": nvvfx.effects.QualityLevel.ULTRA,
+        "LOW": ql.LOW,
+        "MEDIUM": ql.MEDIUM,
+        "HIGH": ql.HIGH,
+        "ULTRA": ql.ULTRA,
+        "HIGHBITRATE_LOW": ql.HIGHBITRATE_LOW,
+        "HIGHBITRATE_MEDIUM": ql.HIGHBITRATE_MEDIUM,
+        "HIGHBITRATE_HIGH": ql.HIGHBITRATE_HIGH,
+        "HIGHBITRATE_ULTRA": ql.HIGHBITRATE_ULTRA,
+        "DENOISE_LOW": ql.DENOISE_LOW,
+        "DENOISE_MEDIUM": ql.DENOISE_MEDIUM,
+        "DENOISE_HIGH": ql.DENOISE_HIGH,
+        "DENOISE_ULTRA": ql.DENOISE_ULTRA,
+        "DEBLUR_LOW": ql.DEBLUR_LOW,
+        "DEBLUR_MEDIUM": ql.DEBLUR_MEDIUM,
+        "DEBLUR_HIGH": ql.DEBLUR_HIGH,
+        "DEBLUR_ULTRA": ql.DEBLUR_ULTRA,
     }
-    q = quality_map.get(quality.upper(), nvvfx.effects.QualityLevel.ULTRA)
+    q = quality_map.get(quality.upper(), ql.HIGHBITRATE_ULTRA)
     sr = nvvfx.VideoSuperRes(q)
     sr.output_width = output_width
     sr.output_height = output_height
@@ -515,9 +528,11 @@ Examples:
     rtx.add_argument(
         "--rtx-quality",
         type=str,
-        default="ULTRA",
-        choices=["LOW", "MEDIUM", "HIGH", "ULTRA"],
-        help="RTX VSR quality level (default: ULTRA)",
+        default="HIGHBITRATE_ULTRA",
+        help="RTX VSR quality level (default: HIGHBITRATE_ULTRA). "
+        "Standard: LOW/MEDIUM/HIGH/ULTRA (artifact suppression + upscale). "
+        "High-bitrate: HIGHBITRATE_LOW/.../HIGHBITRATE_ULTRA (clean sources, skips artifact suppression). "
+        "Same-res: DENOISE_*/DEBLUR_* (set --no-upscale or --scale 1)",
     )
 
     # Output encoding
