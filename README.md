@@ -207,26 +207,39 @@ python mpv/rtx_vsr_server.py --quality MEDIUM    # faster
 
 ### How it works
 
+**Direct filter** (recommended) — nvvfx runs inside the VapourSynth filter process. Simple, fast, no IPC overhead.
+
 ```
-mpv (flatpak or native)                    Host Python
+mpv (native)
++---------------------------+
+| decode video              |
+| VapourSynth filter        |
+|   torch + nvvfx in-process|
+|   RTX VSR upscale         |
+| display upscaled frame    |
++---------------------------+
+```
+
+**Server/client** (for flatpak mpv) — a separate server process handles GPU work, communicating via mmap + Unix socket. This exists because flatpak mpv can't load native CUDA libraries directly.
+
+```
+mpv (flatpak)                              Host Python
 +--------------------+                   +--------------------+
 | decode video       |                   | rtx_vsr_server.py  |
 | VapourSynth filter |                   |   torch + nvvfx    |
 |   write to mmap    |--signal socket--> |   read from mmap   |
 |   read from mmap   |<-signal socket--  |   RTX VSR upscale  |
-| display 4K         |                   |   write to mmap    |
+| display upscaled   |                   |   write to mmap    |
 +--------------------+                   +--------------------+
 ```
 
-Frame data is shared via memory-mapped files in `/tmp` (zero-copy). Only tiny 12-byte control messages go through the Unix socket. This architecture works across flatpak sandboxes.
+The IPC overhead makes the server approach slower — it struggles to maintain 24fps. Use the direct filter whenever possible.
 
 ### Tips
 
 - `--hwdec=auto-copy` lets the GPU decode video (NVDEC) while keeping frames accessible to VapourSynth
-- `concurrent-frames=1` is required — the single mmap buffer can only process one frame at a time
-- The server must be running before you start mpv
+- For the server approach: `concurrent-frames=1` is required, and the server must be running before you start mpv
 - Seeking works but may briefly stutter as the connection recovers
-- For 24fps content on a 60Hz display, you need the server to sustain ~24fps — check its output for speed
 
 ## License
 
