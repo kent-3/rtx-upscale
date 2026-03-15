@@ -1,0 +1,13 @@
+# Model weights (large binary files)
+models/*.pth
+models/*.safetensors
+models/*.onnx
+models/*.bin
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime
+/tmp/rtx_vsr.*
