@@ -2,10 +2,11 @@
 
 ## Project Overview
 
-Video upscaling and enhancement using Nvidia RTX Video Super Resolution (`nvidia-vfx` SDK) and DeH264 artifact removal models. Two independent tools:
+Video and image upscaling/enhancement using Nvidia RTX Video Super Resolution (`nvidia-vfx` SDK) and DeH264 artifact removal models. Three independent tools:
 
+- **`img/`** — Image upscaling, denoising, and deblurring (single files or batch)
 - **`cli/`** — Batch video processing pipeline (ffmpeg decode → optional DeH264 → RTX upscale → ffmpeg encode)
-- **`mpv/`** — Real-time upscaling during mpv playback via VapourSynth filters
+- **`mpv/`** — Real-time video upscaling during mpv playback via VapourSynth filters
 
 Pure Python project (no package manager, no build system). Each tool has its own `requirements.txt`.
 
@@ -24,12 +25,28 @@ Pure Python project (no package manager, no build system). Each tool has its own
 ### Install dependencies
 
 ```bash
+# Image processing
+pip install -r img/requirements.txt
+
 # Batch CLI
 pip install -r cli/requirements.txt
 
 # mpv filter
 pip install -r mpv/requirements.txt
 pip install vapoursynth
+```
+
+### Run the image tool
+
+```bash
+# 2x upscale
+python img/rtx_image.py input.png output.png
+
+# Denoise + deblur + upscale
+python img/rtx_image.py input.jpg output.png --denoise --deblur --scale 4
+
+# Batch process a directory
+python img/rtx_image.py input_dir/ output_dir/ --denoise
 ```
 
 ### Run the batch CLI
@@ -72,6 +89,9 @@ No test suite exists. The project is a CLI tool — test manually by running on 
 ## Architecture
 
 ```
+img/
+  rtx_image.py          Image upscale/denoise/deblur CLI
+  requirements.txt      torch, numpy, nvidia-vfx, Pillow
 cli/
   rtx_enhance.py        Main CLI — threaded pipeline (decoder → GPU → encoder)
   rtmosr.py             RTMoSR neural network architecture (MIT, from rewaifu/RTMoSR)
@@ -85,7 +105,7 @@ mpv/
   requirements.txt      torch, numpy, nvidia-vfx
 ```
 
-The two tools share no code. `cli/` does not import from `mpv/` and vice versa.
+The three tools share no code. `img/`, `cli/`, and `mpv/` do not import from each other.
 
 ### Pipeline threading model (`cli/rtx_enhance.py`)
 

@@ -1,0 +1,4 @@
+nvidia-vfx
+torch
+numpy
+Pillow

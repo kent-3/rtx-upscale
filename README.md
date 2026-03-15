@@ -1,11 +1,67 @@
 # rtx-upscale
 
-Video upscaling and enhancement using Nvidia's [`nvidia-vfx`](https://pypi.org/project/nvidia-vfx/) SDK (RTX Video Super Resolution). The SDK supports AI upscaling (2x/3x/4x), denoising, and deblurring on RTX GPUs.
+Video and image upscaling/enhancement using Nvidia's [`nvidia-vfx`](https://pypi.org/project/nvidia-vfx/) SDK (RTX Video Super Resolution). The SDK supports AI upscaling (2x/3x/4x), denoising, and deblurring on RTX GPUs.
 
-Two independent tools — install only what you need:
+Three independent tools — install only what you need:
 
+- **`img/`** — Image upscaling, denoising, and deblurring (single files or batch)
 - **`cli/`** — Batch video processing (ffmpeg decode → optional DeH264 artifact removal → RTX upscale → ffmpeg encode)
-- **`mpv/`** — Real-time upscaling during mpv playback via VapourSynth + shared memory
+- **`mpv/`** — Real-time video upscaling during mpv playback via VapourSynth + shared memory
+
+## Image Processing — `img/`
+
+Upscale, denoise, and deblur images. Supports chaining multiple passes (e.g. denoise → deblur → upscale).
+
+### Requirements
+
+- Nvidia RTX GPU (20-series or newer)
+- Python 3.10+
+
+### Install
+
+```bash
+pip install -r img/requirements.txt
+```
+
+### Usage
+
+```bash
+# 2x upscale
+python img/rtx_image.py photo.jpg upscaled.png
+
+# 4x upscale with high-bitrate mode (for clean sources)
+python img/rtx_image.py photo.png big.png --scale 4 --quality HIGHBITRATE_ULTRA
+
+# Denoise then upscale
+python img/rtx_image.py noisy.jpg clean_big.png --denoise
+
+# Denoise + deblur then upscale (max cleanup)
+python img/rtx_image.py rough.jpg polished.png --denoise --deblur
+
+# Denoise only (no upscale)
+python img/rtx_image.py noisy.jpg clean.png --denoise --no-upscale
+
+# Batch process a directory
+python img/rtx_image.py input_dir/ output_dir/ --scale 2 --denoise
+```
+
+### Options
+
+```
+Upscaling:
+  --scale FACTOR            Upscale factor (default: 2.0)
+  --quality LEVEL           RTX quality: LOW/MEDIUM/HIGH/ULTRA, HIGHBITRATE_* (default: ULTRA)
+  --no-upscale              Skip upscaling (only run denoise/deblur passes)
+
+Pre-processing (applied before upscaling):
+  --denoise                 Run a denoise pass
+  --denoise-strength LEVEL  LOW/MEDIUM/HIGH/ULTRA (default: ULTRA)
+  --deblur                  Run a deblur pass
+  --deblur-strength LEVEL   LOW/MEDIUM/HIGH/ULTRA (default: ULTRA)
+
+Output:
+  --format FMT              Output format (png, jpg, webp). Auto-detected from extension
+```
 
 ## Batch CLI — `cli/`
 
