@@ -196,6 +196,20 @@ Or use the direct in-process filter (no server needed, faster):
 bash mpv/mpv-rtx video.mp4
 ```
 
+Runtime options can be provided through environment variables:
+
+```bash
+RTX_VSR_SCALE=1 RTX_VSR_CONCURRENT_FRAMES=4 bash mpv/mpv-rtx video.mp4
+DEH264_CONCURRENT_FRAMES=2 bash mpv/mpv-deh264 video.mp4
+```
+
+For same-resolution lightweight H.264 artifact cleanup only, without RTX VSR
+upscaling:
+
+```bash
+bash mpv/mpv-deh264 video.mp4
+```
+
 The direct filter runs nvvfx in-process and avoids the mmap/socket overhead, so it comfortably handles 24fps+ content. The server approach struggles to maintain 24fps due to IPC latency. **Use the direct filter if your mpv is native (not flatpak).**
 
 ### Server options

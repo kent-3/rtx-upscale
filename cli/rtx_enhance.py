@@ -335,9 +335,9 @@ def _get_codec_args(codec: str, crf: int, preset: str) -> list[str]:
             "hvc1",
         ]
     elif codec in ("av1", "svtav1", "libsvtav1"):
-        import os
-
         return [
+            "-vf",
+            "cas=strength=0.8",
             "-c:v",
             "libsvtav1",
             "-preset",
@@ -345,9 +345,9 @@ def _get_codec_args(codec: str, crf: int, preset: str) -> list[str]:
             "-crf",
             str(crf),
             "-pix_fmt",
-            "yuv420p10le",
+            "yuv420p",
             "-svtav1-params",
-            "tune=0:lp=6",
+            "tune=0",
         ]
     elif codec in ("prores", "prores_ks"):
         # ProRes doesn't use CRF — profile 3 = ProRes HQ

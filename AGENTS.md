@@ -101,8 +101,10 @@ mpv/
   rtx_vsr_server.py     Standalone RTX VSR server (mmap + Unix socket IPC)
   rtx_vsr.py            VapourSynth filter client (connects to server via mmap)
   rtx_vsr_direct.py     VapourSynth filter with in-process nvvfx (no server)
+  deh264_direct.py      VapourSynth filter with same-resolution DeH264 cleanup only
   mpv-rtx               Shell wrapper to launch native mpv with direct filter
-  requirements.txt      torch, numpy, nvidia-vfx
+  mpv-deh264            Shell wrapper to launch native mpv with DeH264-only filter
+  requirements.txt      torch, numpy, nvidia-vfx, spandrel
 ```
 
 The three tools share no code. `img/`, `cli/`, and `mpv/` do not import from each other.
